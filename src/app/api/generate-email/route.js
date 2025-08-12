@@ -34,15 +34,20 @@ export async function POST(req) {
     const mailOptions = {
       from: `"Rabbitt Learning" <${process.env.MAIL_USER}>`,
       to: email,
-      subject: `Congratulations on Winning The AI Hiring Show! 🏅`,
+      subject: `Congratulations on Securing 2nd Runner-Up at The AI Hiring Show: Tech + Business Edition | New Delhi 🏅`,
       html: `
         <p>Hi ${name},</p>
-        <p>Congratulations once again for securing a spot among the <strong>Top 7 winning teams</strong> of <strong>The AI Hiring Show: Vibe Coding, Power Hiring</strong> held on 5th July 2025! 🥳</p>
-        <p>We're proud to share your Winner's Certificate, acknowledging your outstanding solution, technical excellence, and real-world problem-solving skills.</p>
-        <p>🔗 <strong>Download your certificate here:</strong> <a href="${certificateData.imageUrl}" target="_blank">${certificateData.imageUrl}</a></p>
-        <p>Your performance set a high standard, and we can't wait to see where you go next.</p>
-        <p>Keep building, keep leading!</p>
-        <p>Team Rabbitt Learning</p>
+        <p>A huge congratulations to you and your team for achieving the <strong>2nd Runner-Up position</strong> at <strong>The AI Hiring Show: Tech + Business Edition — Vibe Coding, Power Hiring</strong> held on 7th August 2025! 🎉</p>
+        <p>Your creativity, problem-solving skills, and AI-powered approach stood out and earned well-deserved recognition from our panel of recruiters and industry experts.</p>
+        <p>📜 <strong>Download your Winner's Certificate here:</strong> <a href="${certificateData.imageUrl}" target="_blank">Downlload your Certificate</a></p>
+        <p>As a special gesture, we're giving you free access to our <strong>"Agentic AI"</strong> course — so you can keep learning, experimenting, and building impactful AI solutions.</p>
+        <p>🎁 <strong>Your Free Course Coupon Code Link:</strong> <a href="https://www.udemy.com/course/agentic-ai-from-scratch-with-crew-ai-autogen/?couponCode=FREEAGENTICAICOURSE" target="_blank">https://www.udemy.com/course/agentic-ai-from-scratch-with-crew-ai-autogen/?couponCode=FREEAGENTICAICOURSE</a></p>
+        <p>⏳ <strong>Redeem before:</strong> 15th August 2025</p>
+        <p>We can't wait to see where your skills take you next. 🚀</p>
+        <p>Best wishes,<br/>Team Rabbitt Learning</p>
+        <p><strong>Vibe Coding. Power Hiring.</strong></p>
+        <p><a href="https://learning.rabbitt.ai/hiring-show" target="_blank">https://learning.rabbitt.ai/hiring-show</a></p>
+        <p><a href="https://www.linkedin.com/showcase/rabbitt-learning/" target="_blank">https://www.linkedin.com/showcase/rabbitt-learning/</a></p>
       `,
       attachments: [
         {
