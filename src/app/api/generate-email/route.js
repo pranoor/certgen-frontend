@@ -4,24 +4,24 @@ import { generateCertificate } from "@/utils/certificate";
 export async function POST(req) {
   try {
     // Parse the request body
-    const { name, testName, email } = await req.json();
+    const { name, email } = await req.json();
 
     // Validate input
-    if (!name || !testName || !email) {
+    if (!name || !email) {
       console.error("Missing required fields");
-      return Response.json({ success: false, error: "Name, Test Name, and Email are required" }, { status: 400 });
+      return Response.json({ success: false, error: "Name and Email are required" }, { status: 400 });
     }
 
-    // Generate certificate (this could fail if something goes wrong in the certificate generation)
-    let imageUrl;
+    // Generate certificate (this will return both URL and buffer)
+    let certificateData;
     try {
-      imageUrl = await generateCertificate(name, testName);
+      certificateData = await generateCertificate(name);
     } catch (error) {
       console.error("Certificate generation error:", error);
       return Response.json({ success: false, error: "Failed to generate certificate" }, { status: 500 });
     }
 
-    // Create the Nodemailer transport
+    // Create the Nodemailer transport (Fixed: use createTransport, not createTransporter)
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -30,18 +30,27 @@ export async function POST(req) {
       },
     });
 
-    // Set up email options
+    // Set up email options with attachment
     const mailOptions = {
-      from: `"Certificate Bot" <${process.env.MAIL_USER}>`,
+      from: `"Rabbitt Learning" <${process.env.MAIL_USER}>`,
       to: email,
-      subject: `Certificate for ${testName}`,
+      subject: `Congratulations on Winning The AI Hiring Show! 🏅`,
       html: `
         <p>Hi ${name},</p>
-        <p>Congratulations on completing <strong>${testName}</strong>!</p>
-        <p>Your certificate is ready:</p>
-        <p><a href="${imageUrl}" target="_blank">Download Certificate</a></p>
-        <p>Thanks,<br />Team</p>
+        <p>Congratulations once again for securing a spot among the <strong>Top 7 winning teams</strong> of <strong>The AI Hiring Show: Vibe Coding, Power Hiring</strong> held on 5th July 2025! 🥳</p>
+        <p>We're proud to share your Winner's Certificate, acknowledging your outstanding solution, technical excellence, and real-world problem-solving skills.</p>
+        <p>🔗 <strong>Download your certificate here:</strong> <a href="${certificateData.imageUrl}" target="_blank">${certificateData.imageUrl}</a></p>
+        <p>Your performance set a high standard, and we can't wait to see where you go next.</p>
+        <p>Keep building, keep leading!</p>
+        <p>Team Rabbitt Learning</p>
       `,
+      attachments: [
+        {
+          filename: `${name}_Winner_Certificate.png`,
+          content: certificateData.buffer,
+          contentType: 'image/png'
+        }
+      ]
     };
 
     // Send the email
@@ -53,7 +62,7 @@ export async function POST(req) {
     }
 
     // Return success response
-    return Response.json({ success: true, imageUrl });
+    return Response.json({ success: true, imageUrl: certificateData.imageUrl });
     
   } catch (error) {
     // Catch any unexpected errors and log them

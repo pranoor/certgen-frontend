@@ -6,7 +6,7 @@ import { MoonIcon, SunIcon } from '@heroicons/react/24/outline';
 
 export default function Home() {
   const [name, setName] = useState("");
-  const [testName, setTestName] = useState("");
+  const [email, setEmail] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -19,8 +19,8 @@ export default function Home() {
     setImageUrl("");
 
     // Validation for missing inputs
-    if (!name || !testName) {
-      toast.error("Both Name and Test Name are required.");
+    if (!name) {
+      toast.error("Name is required.");
       setLoading(false);
       return;
     }
@@ -28,7 +28,7 @@ export default function Home() {
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
-        body: JSON.stringify({ name, testName }),
+        body: JSON.stringify({ name }),
       });
 
       const data = await res.json();
@@ -67,10 +67,10 @@ export default function Home() {
         const newResults = [];
 
         for (const row of results.data) {
-          const { Name, TestName, Email } = row;
+          const { Name, Email } = row;
 
           // Validate each row of CSV
-          if (!Name || !TestName || !Email) {
+          if (!Name || !Email) {
             toast.error("One or more rows are missing required fields.");
             continue;
           }
@@ -81,7 +81,6 @@ export default function Home() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 name: Name.trim(),
-                testName: TestName.trim(),
                 email: Email.trim(),
               }),
             });
@@ -90,7 +89,6 @@ export default function Home() {
             if (data.success) {
               newResults.push({
                 name: Name.trim(),
-                testName: TestName.trim(),
                 email: Email.trim(),
                 url: data.imageUrl,
               });
@@ -120,9 +118,9 @@ export default function Home() {
   }
 
   function downloadCertificatesAsCSV(results) {
-    const header = "Name,TestName,Email,CertificateLink\n";
+    const header = "Name,Email,CertificateLink\n";
     const rows = results
-      .map(({ name, testName, email, url }) => `"${name}","${testName}","${email}","${url}"`)
+      .map(({ name, email, url }) => `"${name}","${email}","${url}"`)
       .join("\n");
 
     try {
@@ -170,11 +168,11 @@ export default function Home() {
             required
           />
           <input
-            placeholder="Test Name"
-            value={testName}
-            onChange={(e) => setTestName(e.target.value)}
+            placeholder="Email (optional for single generation)"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="p-4 rounded-lg border border-gray-300 text-black shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-            required
+            type="email"
           />
           <button
             type="submit"
@@ -202,6 +200,9 @@ export default function Home() {
       {/* Bulk Upload */}
       <section className="max-w-6xl mx-auto mt-20 p-6 bg-gradient-to-r from-blue-50 to-blue-100 dark:bg-gray-800 rounded-2xl shadow-xl transition-all">
         <h2 className="text-xl font-semibold text-center mb-6 text-black">Generate Bulk Certificates</h2>
+        <div className="mb-4 text-sm text-gray-600 dark:text-gray-300">
+          <p>CSV format: <strong>Name, Email</strong></p>
+        </div>
         <input
           type="file"
           accept=".csv"
@@ -232,7 +233,6 @@ export default function Home() {
                 <thead className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white uppercase text-xs">
                   <tr>
                     <th className="px-4 py-2 border">Name</th>
-                    <th className="px-4 py-2 border">Test</th>
                     <th className="px-4 py-2 border">Email</th>
                     <th className="px-4 py-2 border">Preview</th>
                     <th className="px-4 py-2 border">Download</th>
@@ -242,7 +242,6 @@ export default function Home() {
                   {bulkResults.map((res, idx) => (
                     <tr key={idx} className="border-t">
                       <td className="px-4 py-2 border">{res.name}</td>
-                      <td className="px-4 py-2 border">{res.testName}</td>
                       <td className="px-4 py-2 border">{res.email}</td>
                       <td className="px-4 py-2 border">
                         <a href={res.url} target="_blank" rel="noreferrer">
