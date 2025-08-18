@@ -1,16 +1,21 @@
 import nodemailer from "nodemailer";
 import { generateCertificate } from "@/utils/certificate";
+import { emailTemplates, replaceVariables } from "@/utils/emailTemplates";
 
 export async function POST(req) {
   try {
     // Parse the request body
-    const { name, email } = await req.json();
+    const { name, email, emailSubject, emailContent } = await req.json();
 
     // Validate input
     if (!name || !email) {
       console.error("Missing required fields");
       return Response.json({ success: false, error: "Name and Email are required" }, { status: 400 });
     }
+
+    // Use default values if custom email content is not provided
+    const finalSubject = emailSubject || emailTemplates.default.subject;
+    const finalContent = emailContent || emailTemplates.default.content;
 
     // Generate certificate (this will return both URL and buffer)
     let certificateData;
@@ -30,28 +35,41 @@ export async function POST(req) {
       },
     });
 
+    // Replace variables in email content
+    const variables = {
+      name: name,
+      certificateLink: certificateData.imageUrl,
+      date: new Date().toLocaleDateString(),
+      time: new Date().toLocaleTimeString()
+    };
+    
+    const processedSubject = replaceVariables(finalSubject, variables);
+    const processedContent = replaceVariables(finalContent, variables);
+
+    // Convert plain text to HTML (preserve line breaks and make links clickable)
+    let htmlContent = processedContent.replace(/\n/g, '<br>');
+    
+    // Make certificate links clickable
+    htmlContent = htmlContent.replace(
+      /\{\{certificateLink\}\}/g, 
+      `<a href="${certificateData.imageUrl}" target="_blank" style="color: #2563eb; text-decoration: underline;">Download Certificate</a>`
+    );
+    
+    // Make any other URLs clickable
+    htmlContent = htmlContent.replace(
+      /(https?:\/\/[^\s<]+)/g,
+      '<a href="$1" target="_blank" style="color: #2563eb; text-decoration: underline;">$1</a>'
+    );
+
     // Set up email options with attachment
     const mailOptions = {
-      from: `"Rabbitt Learning" <${process.env.MAIL_USER}>`,
+      from: `"CertGen" <${process.env.MAIL_USER}>`,
       to: email,
-      subject: `Congratulations on Securing 2nd Runner-Up at The AI Hiring Show: Tech + Business Edition | New Delhi 🏅`,
-      html: `
-        <p>Hi ${name},</p>
-        <p>A huge congratulations to you and your team for achieving the <strong>2nd Runner-Up position</strong> at <strong>The AI Hiring Show: Tech + Business Edition — Vibe Coding, Power Hiring</strong> held on 7th August 2025! 🎉</p>
-        <p>Your creativity, problem-solving skills, and AI-powered approach stood out and earned well-deserved recognition from our panel of recruiters and industry experts.</p>
-        <p>📜 <strong>Download your Winner's Certificate here:</strong> <a href="${certificateData.imageUrl}" target="_blank">Downlload your Certificate</a></p>
-        <p>As a special gesture, we're giving you free access to our <strong>"Agentic AI"</strong> course — so you can keep learning, experimenting, and building impactful AI solutions.</p>
-        <p>🎁 <strong>Your Free Course Coupon Code Link:</strong> <a href="https://www.udemy.com/course/agentic-ai-from-scratch-with-crew-ai-autogen/?couponCode=FREEAGENTICAICOURSE" target="_blank">https://www.udemy.com/course/agentic-ai-from-scratch-with-crew-ai-autogen/?couponCode=FREEAGENTICAICOURSE</a></p>
-        <p>⏳ <strong>Redeem before:</strong> 15th August 2025</p>
-        <p>We can't wait to see where your skills take you next. 🚀</p>
-        <p>Best wishes,<br/>Team Rabbitt Learning</p>
-        <p><strong>Vibe Coding. Power Hiring.</strong></p>
-        <p><a href="https://learning.rabbitt.ai/hiring-show" target="_blank">https://learning.rabbitt.ai/hiring-show</a></p>
-        <p><a href="https://www.linkedin.com/showcase/rabbitt-learning/" target="_blank">https://www.linkedin.com/showcase/rabbitt-learning/</a></p>
-      `,
+      subject: processedSubject,
+      html: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">${htmlContent}</div>`,
       attachments: [
         {
-          filename: `${name}_Winner_Certificate.png`,
+          filename: `${name}_Certificate.png`,
           content: certificateData.buffer,
           contentType: 'image/png'
         }
