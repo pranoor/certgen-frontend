@@ -12,6 +12,22 @@ export default function Home() {
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkResults, setBulkResults] = useState([]);
   const [darkMode, setDarkMode] = useState(false);
+  
+  // Email customization states
+  const [emailSubject, setEmailSubject] = useState("Congratulations! Your Certificate is Ready 🎉");
+  const [emailContent, setEmailContent] = useState(`Hi {{name}},
+
+Congratulations on your achievement! 🎉
+
+We're excited to share your certificate with you. You can download it using the link below:
+
+📜 Download your certificate: {{certificateLink}}
+
+Keep up the great work!
+
+Best regards,
+The CertGen Team`);
+  const [showEmailCustomization, setShowEmailCustomization] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -43,6 +59,39 @@ export default function Home() {
       toast.error("Failed to generate certificate. Please try again.");
     }
 
+    setLoading(false);
+  }
+
+  async function handleSendEmail() {
+    if (!name || !email) {
+      toast.error("Name and email are required to send certificate.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/generate-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          emailSubject: emailSubject,
+          emailContent: emailContent,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Certificate sent to ${email}!`);
+        setImageUrl(data.imageUrl);
+      } else {
+        toast.error("Failed to send certificate email.");
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+      toast.error("Failed to send certificate email.");
+    }
     setLoading(false);
   }
 
@@ -82,6 +131,8 @@ export default function Home() {
               body: JSON.stringify({
                 name: Name.trim(),
                 email: Email.trim(),
+                emailSubject: emailSubject,
+                emailContent: emailContent,
               }),
             });
 
@@ -168,19 +219,29 @@ export default function Home() {
             required
           />
           <input
-            placeholder="Email (optional for single generation)"
+            placeholder="Email (required for email sending)"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="p-4 rounded-lg border border-gray-300 text-black shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
             type="email"
           />
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition ease-in-out"
-          >
-            {loading ? "Generating..." : "Generate Certificate"}
-          </button>
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition ease-in-out"
+            >
+              {loading ? "Generating..." : "Generate Certificate"}
+            </button>
+            <button
+              type="button"
+              onClick={handleSendEmail}
+              disabled={loading || !email}
+              className="flex-1 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition ease-in-out disabled:bg-gray-400"
+            >
+              {loading ? "Sending..." : "Generate & Email"}
+            </button>
+          </div>
         </form>
         {loading && (
           <div className="flex justify-center mt-4">
@@ -197,11 +258,161 @@ export default function Home() {
         </div>
       )}
 
+      {/* Email Customization Section */}
+      <section className="max-w-4xl mx-auto mt-16 p-6 bg-white/70 dark:bg-white/10 backdrop-blur-md rounded-2xl shadow-xl transition-all">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold">📧 Email Customization</h2>
+          <button
+            onClick={() => setShowEmailCustomization(!showEmailCustomization)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            {showEmailCustomization ? "Hide" : "Customize Email"}
+          </button>
+        </div>
+        
+        {showEmailCustomization && (
+          <div className="space-y-6">
+            <div className="flex flex-wrap gap-2 mb-4">
+              <span className="text-sm font-medium">Quick Templates:</span>
+              <button
+                onClick={() => {
+                  setEmailSubject("Congratulations! Your Certificate is Ready 🎉");
+                  setEmailContent(`Hi {{name}},
+
+Congratulations on your achievement! 🎉
+
+We're excited to share your certificate with you. You can download it using the link below:
+
+📜 Download your certificate: {{certificateLink}}
+
+Keep up the great work!
+
+Best regards,
+The CertGen Team`);
+                }}
+                className="px-3 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded hover:bg-blue-200 dark:hover:bg-blue-800"
+              >
+                Default
+              </button>
+              <button
+                onClick={() => {
+                  setEmailSubject("🏆 Achievement Unlocked - Your Certificate Awaits!");
+                  setEmailContent(`Dear {{name}},
+
+🎊 Fantastic news! You've successfully completed your certification!
+
+Your dedication and hard work have paid off. We're thrilled to present you with your official certificate.
+
+🔗 Access your certificate here: {{certificateLink}}
+
+This achievement is a testament to your commitment to excellence. We're proud to have been part of your learning journey.
+
+Congratulations once again!
+
+Warm regards,
+The Certification Team`);
+                }}
+                className="px-3 py-1 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded hover:bg-green-200 dark:hover:bg-green-800"
+              >
+                Professional
+              </button>
+              <button
+                onClick={() => {
+                  setEmailSubject("🎓 Your Certificate is Here - Well Done {{name}}!");
+                  setEmailContent(`Hey {{name}}! 👋
+
+Awesome job completing your certification! 🚀
+
+You've put in the work, and now it's time to celebrate. Your certificate is ready and waiting for you.
+
+👉 Grab your certificate: {{certificateLink}}
+
+Share it with pride - you've earned it! 💪
+
+Cheers to your success!
+The Team 🎉`);
+                }}
+                className="px-3 py-1 text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded hover:bg-purple-200 dark:hover:bg-purple-800"
+              >
+                Casual
+              </button>
+              <button
+                onClick={() => {
+                  setEmailSubject("Certificate of Completion - {{name}}");
+                  setEmailContent(`Dear {{name}},
+
+We are pleased to inform you that your certificate of completion has been generated and is now available for download.
+
+Certificate Details:
+- Recipient: {{name}}
+- Date of Issue: ${new Date().toLocaleDateString()}
+
+Please find your certificate at the following link: {{certificateLink}}
+
+Should you have any questions or require assistance, please do not hesitate to contact us.
+
+Sincerely,
+The Certification Authority`);
+                }}
+                className="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                Formal
+              </button>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-2">Email Subject</label>
+              <input
+                type="text"
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                className="w-full p-3 rounded-lg border border-gray-300 text-black shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                placeholder="Enter email subject..."
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-2">Email Content</label>
+              <div className="mb-2 text-xs text-gray-600 dark:text-gray-400">
+                <p>Available variables: 
+                  <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded mx-1">{"{{name}}"}</code>
+                  <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded mx-1">{"{{certificateLink}}"}</code>
+                  <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded mx-1">{"{{date}}"}</code>
+                  <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded mx-1">{"{{time}}"}</code>
+                </p>
+              </div>
+              <textarea
+                value={emailContent}
+                onChange={(e) => setEmailContent(e.target.value)}
+                rows={12}
+                className="w-full p-3 rounded-lg border border-gray-300 text-black shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono text-sm"
+                placeholder="Enter email content with variables..."
+              />
+            </div>
+            
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+              <h4 className="font-medium mb-2">Preview for "John Doe":</h4>
+              <div className="text-sm bg-white dark:bg-gray-800 p-3 rounded border">
+                <div className="font-medium mb-2">Subject: {emailSubject}</div>
+                <div className="whitespace-pre-wrap">
+                  {emailContent
+                    .replace(/\{\{name\}\}/g, "John Doe")
+                    .replace(/\{\{certificateLink\}\}/g, "[Certificate Download Link]")
+                    .replace(/\{\{date\}\}/g, new Date().toLocaleDateString())
+                    .replace(/\{\{time\}\}/g, new Date().toLocaleTimeString())}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* Bulk Upload */}
       <section className="max-w-6xl mx-auto mt-20 p-6 bg-gradient-to-r from-blue-50 to-blue-100 dark:bg-gray-800 rounded-2xl shadow-xl transition-all">
         <h2 className="text-xl font-semibold text-center mb-6 text-black">Generate Bulk Certificates</h2>
         <div className="mb-4 text-sm text-gray-600 dark:text-gray-300">
           <p>CSV format: <strong>Name, Email</strong></p>
+          <p className="mt-1">📧 Will use the email template configured above for all recipients</p>
         </div>
         <input
           type="file"

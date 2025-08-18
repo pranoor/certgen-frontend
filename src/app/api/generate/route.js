@@ -5,18 +5,18 @@ export async function POST(req) {
     // Step 1: Parse and validate incoming request
     const { name, testName } = await req.json();
 
-    if (!name || !testName) {
-      console.error("Missing required fields: name or testName.");
+    if (!name) {
+      console.error("Missing required field: name.");
       return Response.json(
-        { success: false, error: "Name and Test Name are required." },
+        { success: false, error: "Name is required." },
         { status: 400 }
       );
     }
 
     // Step 2: Generate certificate and handle errors
-    let imageUrl;
+    let certificateData;
     try {
-      imageUrl = await generateCertificate(name, testName);
+      certificateData = await generateCertificate(name, testName);
     } catch (generateError) {
       console.error("Certificate generation failed:", generateError);
       return Response.json(
@@ -26,7 +26,7 @@ export async function POST(req) {
     }
 
     // Step 3: Return success with certificate URL
-    return Response.json({ success: true, imageUrl });
+    return Response.json({ success: true, imageUrl: certificateData.imageUrl || certificateData });
   } catch (error) {
     // General error handling for any unforeseen issues
     console.error("API Error:", error);
