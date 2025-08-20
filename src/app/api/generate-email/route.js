@@ -77,12 +77,12 @@ export async function POST(req) {
     };
 
     // Send the email
-    try {
-      await transporter.sendMail(mailOptions);
-    } catch (error) {
-      console.error("Error sending email:", error);
-      return Response.json({ success: false, error: "Failed to send email" }, { status: 500 });
-    }
+    // try {
+    //   await transporter.sendMail(mailOptions);
+    // } catch (error) {
+    //   console.error("Error sending email:", error);
+    //   return Response.json({ success: false, error: "Failed to send email" }, { status: 500 });
+    // }
 
     // Return success response
     return Response.json({ success: true, imageUrl: certificateData.imageUrl });

@@ -125,7 +125,7 @@ The CertGen Team`);
           }
 
           try {
-            const res = await fetch("/api/generate-email", {
+            const res = await fetch("/api/generate", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -186,6 +186,68 @@ The CertGen Team`);
     } catch (error) {
       console.error("Error downloading CSV:", error);
       toast.error("Failed to download CSV file.");
+    }
+  }
+
+  // Add this new function to download all certificates as ZIP
+  async function downloadAllCertificatesAsZip(results) {
+    if (results.length === 0) {
+      toast.error("No certificates to download");
+      return;
+    }
+
+    toast.loading("Preparing ZIP file...");
+    
+    try {
+      // Dynamic import of JSZip
+      const JSZip = (await import('jszip')).default;
+      const zip = new JSZip();
+      
+      // Create a folder in the ZIP
+      const folder = zip.folder("certificates");
+      
+      // Download each certificate and add to ZIP
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i];
+        try {
+          const response = await fetch(result.url);
+          const blob = await response.blob();
+          
+          // Clean filename by removing special characters
+          const cleanName = result.name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+          const filename = `${cleanName}_certificate.png`;
+          
+          folder.file(filename, blob);
+          
+          // Update progress
+          toast.loading(`Adding certificate ${i + 1}/${results.length} to ZIP...`);
+        } catch (error) {
+          console.error(`Failed to download certificate for ${result.name}:`, error);
+          toast.error(`Failed to add ${result.name}'s certificate to ZIP`);
+        }
+      }
+      
+      // Generate and download ZIP file
+      toast.loading("Generating ZIP file...");
+      const content = await zip.generateAsync({ type: "blob" });
+      
+      // Create download link
+      const url = URL.createObjectURL(content);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `certificates_${new Date().toISOString().slice(0, 10)}.zip`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.dismiss();
+      toast.success("All certificates downloaded successfully!");
+      
+    } catch (error) {
+      console.error("Error creating ZIP file:", error);
+      toast.dismiss();
+      toast.error("Failed to create ZIP file. Please try again.");
     }
   }
 
@@ -430,12 +492,20 @@ The Certification Authority`);
           <div className="mt-6 space-y-3">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium">Generated Certificates</h3>
-              <button
-                onClick={() => downloadCertificatesAsCSV(bulkResults)}
-                className="text-sm px-3 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-600 hover:text-white transition"
-              >
-                Download CSV
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => downloadCertificatesAsCSV(bulkResults)}
+                  className="text-sm px-3 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-600 hover:text-white transition"
+                >
+                  Download CSV
+                </button>
+                <button
+                  onClick={() => downloadAllCertificatesAsZip(bulkResults)}
+                  className="text-sm px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition flex items-center gap-1"
+                >
+                  📦 Download All as ZIP
+                </button>
+              </div>
             </div>
 
             {/* Table with Thumbnails */}
